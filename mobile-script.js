@@ -112,11 +112,6 @@ window.items = [
   img: imgPath("fox.png")},
 ];
 
-window.addEventListener("DOMContentLoaded", () => {
-  loadData();
-  render();
-});
-
 function loadData() {
   let saved = localStorage.getItem("items");
 
