@@ -187,32 +187,29 @@ resetBtn.addEventListener("touchend", function (e) {
   }
 });
 
-window.render = function() {
+window.render = function () {
   const container = document.getElementById("container");
   if (!container) return;
 
   container.innerHTML = "";
 
   items.forEach((item, i) => {
-  const itemElement = document.createElement("div");
+    const itemElement = document.createElement("div");
+    itemElement.className = "item";
 
-  bindPointer(itemElement, i);
-});
-    div.className = "item";
-
-    div.innerHTML = `
-      <img src="${item.img}"
-           onerror="this.onerror=null;this.src='roco-image/fallback.png'">
+    itemElement.innerHTML = `
+      <img src="${item.img}">
       <div>${item.name}</div>
       <div class="count">数量: ${item.count}</div>
     `;
 
-    container.appendChild(div);
+    bindPointer(itemElement, i);
+
+    container.appendChild(itemElement);
   });
 
   updateStats();
 };
-
 
  //重置按钮
 window.undo = function() {
