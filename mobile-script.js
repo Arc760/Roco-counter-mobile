@@ -148,8 +148,6 @@ function saveHistory() {
   }
 }
 
-let pressTimer;
-
 itemElement.addEventListener("touchstart", function () {
   pressTimer = setTimeout(() => {
     let value = prompt("输入数量：");
