@@ -1,4 +1,3 @@
-let pressTimer = null;
 let currentIndex = null;
 
 let historyStack = [];
@@ -243,7 +242,7 @@ window.resetAll = function() {
 function bindPointer(el, index) {
   let startX = 0;
   let startY = 0;
-  let pressTimer;
+  let pressTimer = null;
   let moved = false;
   let isLongPress = false;
 
