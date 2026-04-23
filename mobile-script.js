@@ -112,6 +112,11 @@ window.items = [
   img: imgPath("fox.png")},
 ];
 
+window.addEventListener("DOMContentLoaded", () => {
+  loadData();
+  render();
+});
+
 function loadData() {
   let saved = localStorage.getItem("items");
 
@@ -233,12 +238,14 @@ window.resetAll = function() {
 
 function bindPointer(el, index) {
   let startX = 0;
-  let moved = false;
+  let startY = 0;
   let pressTimer = null;
+  let moved = false;
   let isLongPress = false;
 
-  el.addEventListener("pointerdown", (e) => {
+  el.addEventListener("pointerdown", function (e) {
     startX = e.clientX;
+    startY = e.clientY;
     moved = false;
     isLongPress = false;
 
@@ -246,40 +253,74 @@ function bindPointer(el, index) {
       isLongPress = true;
 
       let value = prompt("输入数量：");
-      items[index].count = parseInt(value) || 0;
-      saveData();
-      render();
+      if (value !== null) {
+        items[index].count = parseInt(value) || 0;
+        saveData();
+        render();
+      }
     }, 600);
   });
 
-  el.addEventListener("pointermove", (e) => {
-    if (Math.abs(e.clientX - startX) > 10) {
+  el.addEventListener("pointermove", function (e) {
+    let dx = e.clientX - startX;
+    let dy = e.clientY - startY;
+
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
       moved = true;
       clearTimeout(pressTimer);
     }
   });
 
-  el.addEventListener("pointerup", (e) => {
+  el.addEventListener("pointerup", function (e) {
     clearTimeout(pressTimer);
 
-    if (isLongPress) return;
+    if (isLongPress) return; // ❗关键：长按不再触发任何操作
 
     let dx = e.clientX - startX;
+    let dy = Math.abs(e.clientY - startY);
 
-    if (dx > 30) {
-      items[index].count--;
-      saveData();
-      render();
+    // 👉 右滑 = -1
+    if (dx > 30 && dy < 50) {
+      minusOne(index);
       return;
     }
 
+    // 👉 点击 = +1（没有移动才算）
     if (!moved) {
-      items[index].count++;
-      saveData();
-      render();
+      addOne(index);
     }
   });
 }
+
+  el.addEventListener("pointermove", function (e) {
+    let dx = e.clientX - startX;
+    let dy = e.clientY - startY;
+
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+      moved = true;
+      clearTimeout(pressTimer);
+    }
+  });
+
+  el.addEventListener("pointerup", function (e) {
+    clearTimeout(pressTimer);
+
+    if (isLongPress) return; // ❗关键：长按不再触发任何操作
+
+    let dx = e.clientX - startX;
+    let dy = Math.abs(e.clientY - startY);
+
+    // 👉 右滑 = -1
+    if (dx > 30 && dy < 50) {
+      minusOne(index);
+      return;
+    }
+
+    // 👉 点击 = +1（没有移动才算）
+    if (!moved) {
+      addOne(index);
+    }
+  });
 
   document.addEventListener("DOMContentLoaded", function () {
 
