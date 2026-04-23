@@ -194,7 +194,10 @@ window.render = function() {
   container.innerHTML = "";
 
   items.forEach((item, i) => {
-    const div = document.createElement("div");
+  const itemElement = document.createElement("div");
+
+  bindPointer(itemElement, i);
+});
     div.className = "item";
 
     div.innerHTML = `
@@ -203,9 +206,6 @@ window.render = function() {
       <div>${item.name}</div>
       <div class="count">数量: ${item.count}</div>
     `;
-
-    // 👉 绑定手机手势（重点）
-    bindPointer(div, i);
 
     container.appendChild(div);
   });
