@@ -42,34 +42,28 @@ window.addEventListener("DOMContentLoaded", () => {
   let moved = false;
 
   // ⭐ 关键：只用这一套手势
-  resetBtn.addEventListener("pointerdown", (e) => {
-    startX = e.clientX;
-    startY = e.clientY;
-    moved = false;
-  });
+resetBtn.addEventListener("pointerdown", (e) => {
+  startX = e.clientX;
+  startY = e.clientY;
+});
 
-  resetBtn.addEventListener("pointermove", (e) => {
-    let dx = e.clientX - startX;
-    let dy = e.clientY - startY;
+resetBtn.addEventListener("pointerup", (e) => {
+  const dx = e.clientX - startX;
+  const dy = Math.abs(e.clientY - startY);
 
-    if (Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy)) {
-      moved = true;
-    }
-  });
+  console.log("dx:", dx, "dy:", dy); // ⭐调试用
 
-  resetBtn.addEventListener("pointerup", (e) => {
-    let dx = e.clientX - startX;
-    let dy = Math.abs(e.clientY - startY);
+  // 👉 右滑打开菜单
+  if (dx > 25 && dx > dy) {
+    e.preventDefault();
+    e.stopPropagation();
+    showResetMenu(e.pageX, e.pageY);
+    return;
+  }
 
-    // 👉 右滑 → 打开菜单
-    if (moved || (dx > 25 && dx > dy)) {
-      showResetMenu(e.pageX, e.pageY);
-      return;
-    }
-
-    // 👉 点击 → 重置
-    resetAll();
-  });
+  // 👉 点击才重置
+  resetAll();
+});
 
   undoBtn.addEventListener("click", undo);
 });
