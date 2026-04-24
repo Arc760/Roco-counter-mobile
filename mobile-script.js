@@ -1,5 +1,7 @@
 let items = [];
 let historyStack = [];
+let resetBtn = null;
+let undoBtn = null;
 
 /* ===== 数据 ===== */
 items = [
@@ -22,125 +24,130 @@ items = [
   { name: "影狸", type: ["幽系"], count: 0, img: "roco-image/fox.png" }
 ];
 
-/* ===== 启动 ===== */
-window.onload = function () {
+/* ===== 初始化 ===== */
+window.addEventListener("DOMContentLoaded", () => {
   loadData();
   render();
 
-  const resetBtn = document.querySelector(".reset-btn");
-  const undoBtn = document.querySelector(".undo-btn");
+  resetBtn = document.querySelector(".reset-btn");
+  undoBtn = document.querySelector(".undo-btn");
 
-  if (resetBtn) resetBtn.addEventListener("click", resetAll);
-  if (undoBtn) undoBtn.addEventListener("click", undo);
-};
+  if (!resetBtn) {
+    console.log("❌ reset-btn 没找到");
+    return;
+  }
 
-/* ===== 渲染 ===== */
-function render() {
-  const container = document.getElementById("container");
-  container.innerHTML = "";
-
-  items.forEach((item, i) => {
-    const div = document.createElement("div");
-    div.className = "item";
-
-    div.innerHTML = `
-  <img src="${item.img}">
-  <div>${item.name}</div>
-  <div class="count ${item.count > 0 ? "active" : ""}">
-    ${item.count}
-  </div>
-`;
-
-    bindGesture(div, i);
-    container.appendChild(div);
-  });
-
-  updateStats();
-}
-
-/* ===== 手势 ===== */
-function bindGesture(el, index) {
   let startX = 0;
+  let startY = 0;
   let moved = false;
-  let timer = null;
-  let isLong = false;
 
-  el.addEventListener("pointerdown", (e) => {
+  // ⭐ 关键：只用这一套手势
+  resetBtn.addEventListener("pointerdown", (e) => {
     startX = e.clientX;
+    startY = e.clientY;
     moved = false;
-    isLong = false;
-
-    timer = setTimeout(() => {
-      isLong = true;
-
-      let v = prompt("输入数量");
-      if (v !== null) {
-        items[index].count = parseInt(v) || 0;
-        save();
-        render();
-      }
-    }, 600);
   });
 
-  el.addEventListener("pointermove", (e) => {
-    if (Math.abs(e.clientX - startX) > 10) {
-      moved = true;
-      clearTimeout(timer);
-    }
-  });
-
-  el.addEventListener("pointerup", (e) => {
-    clearTimeout(timer);
-    if (isLong) return;
-
+  resetBtn.addEventListener("pointermove", (e) => {
     let dx = e.clientX - startX;
+    let dy = e.clientY - startY;
 
-    // ✅ 1. 先判断右滑
-    if (dx > 30) {
-      items[index].count--;
-      save();
-      render();
-      return;
-    }
-
-    // ❗ 2. 再判断左滑（如果你以后要加）
-    if (dx < -30) {
-      items[index].count++;
-      save();
-      render();
-      return;
-    }
-
-    // ✅ 3. 最后才是点击
-    if (!moved) {
-      items[index].count++;
-      save();
-      render();
+    if (Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy)) {
+      moved = true;
     }
   });
-}
 
-/* ===== 统计 ===== */
-function updateStats() {
-  let stats = {};
+  resetBtn.addEventListener("pointerup", (e) => {
+    let dx = e.clientX - startX;
+    let dy = Math.abs(e.clientY - startY);
 
+    // 👉 右滑 → 打开菜单
+    if (moved || (dx > 25 && dx > dy)) {
+      showResetMenu(e.pageX, e.pageY);
+      return;
+    }
+
+    // 👉 点击 → 重置
+    resetAll();
+  });
+
+  undoBtn.addEventListener("click", undo);
+});
+
+/* ===== 菜单 ===== */
+function showResetMenu(x, y) {
+  const menu = document.getElementById("resetMenu");
+  const typeBox = document.getElementById("typeList");
+  const nameBox = document.getElementById("nameList");
+
+  menu.style.display = "block";
+  menu.style.left = x + "px";
+  menu.style.top = y + "px";
+
+  // ===== 属性 =====
+  let typeMap = {};
   items.forEach(item => {
-    let types = Array.isArray(item.type)
-      ? item.type
-      : item.type.split(",");
-
-    types.forEach(t => {
-      t = t.trim();
-      stats[t] = (stats[t] || 0) + item.count;
+    (Array.isArray(item.type) ? item.type : [item.type]).forEach(t => {
+      typeMap[t] = true;
     });
   });
 
-  let text = "";
-  for (let t in stats) {
-    text += `${t}：${stats[t]}  `;
-  }
+  typeBox.innerHTML = "<b>属性</b>";
+  Object.keys(typeMap).forEach(t => {
+    let div = document.createElement("div");
+    div.className = "menu-item";
+    div.innerText = t;
+    div.onclick = () => {
+      resetByType(t);
+      hideMenu();
+    };
+    typeBox.appendChild(div);
+  });
 
-  document.getElementById("stats").innerText = text || "暂无数据";
+  // ===== 宠物 =====
+  nameBox.innerHTML = "<b>宠物</b>";
+  items.forEach(item => {
+    let div = document.createElement("div");
+    div.className = "menu-item";
+    div.innerText = item.name;
+    div.onclick = () => {
+      item.count = 0;
+      save();
+      render();
+      hideMenu();
+    };
+    nameBox.appendChild(div);
+  });
+}
+
+function hideMenu() {
+  const menu = document.getElementById("resetMenu");
+  if (menu) menu.style.display = "none";
+}
+
+document.addEventListener("click", hideMenu);
+
+/* ===== 功能 ===== */
+function resetByType(type) {
+  items.forEach(item => {
+    let types = Array.isArray(item.type) ? item.type : [item.type];
+    if (types.includes(type)) item.count = 0;
+  });
+  save();
+  render();
+}
+
+function resetAll() {
+  items.forEach(i => i.count = 0);
+  save();
+  render();
+}
+
+function undo() {
+  if (!historyStack.length) return;
+  items = JSON.parse(historyStack.pop());
+  save();
+  render();
 }
 
 /* ===== 存档 ===== */
@@ -153,24 +160,87 @@ function loadData() {
   if (data) items = JSON.parse(data);
 }
 
-/* ===== 历史 ===== */
-function pushHistory() {
-  historyStack.push(JSON.stringify(items));
-  if (historyStack.length > 50) historyStack.shift();
+/* ===== 渲染 ===== */
+function render() {
+  const container = document.getElementById("container");
+  container.innerHTML = "";
+
+  items.forEach((item, i) => {
+    const div = document.createElement("div");
+    div.className = "item";
+
+    div.innerHTML = `
+      <img src="${item.img}">
+      <div>${item.name}</div>
+      <div class="count ${item.count > 0 ? "active" : ""}">
+        ${item.count}
+      </div>
+    `;
+
+    bindGesture(div, i);
+    container.appendChild(div);
+  });
+
+  updateStats();
 }
 
-/* ===== 操作 ===== */
-function resetAll() {
-  pushHistory();
-  items.forEach(i => i.count = 0);
-  save();
-  render();
+/* ===== 点击/滑动 ===== */
+function bindGesture(el, index) {
+  let startX = 0;
+  let startY = 0;
+  let timer = null;
+  let isLong = false;
+
+  const SWIPE = 40;
+
+  el.addEventListener("pointerdown", (e) => {
+    startX = e.clientX;
+    startY = e.clientY;
+    isLong = false;
+
+    timer = setTimeout(() => {
+      isLong = true;
+      let v = prompt("输入数量");
+      if (v !== null) {
+        items[index].count = parseInt(v) || 0;
+        save();
+        render();
+      }
+    }, 600);
+  });
+
+  el.addEventListener("pointerup", (e) => {
+    clearTimeout(timer);
+    if (isLong) return;
+
+    let dx = e.clientX - startX;
+    let dy = e.clientY - startY;
+
+    if (Math.abs(dx) > Math.abs(dy) && dx > SWIPE) {
+      items[index].count--;
+      save();
+      render();
+      return;
+    }
+
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+      items[index].count++;
+      save();
+      render();
+    }
+  });
 }
 
-function undo() {
-  if (historyStack.length === 0) return;
+/* ===== 统计 ===== */
+function updateStats() {
+  let stats = {};
 
-  items = JSON.parse(historyStack.pop());
-  save();
-  render();
+  items.forEach(item => {
+    (Array.isArray(item.type) ? item.type : [item.type]).forEach(t => {
+      stats[t] = (stats[t] || 0) + item.count;
+    });
+  });
+
+  document.getElementById("stats").innerText =
+    Object.entries(stats).map(([k,v]) => `${k}:${v}`).join(" ") || "暂无数据";
 }
