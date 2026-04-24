@@ -1,5 +1,3 @@
-console.log("JS加载成功");
-
 let currentIndex = null;
 
 let historyStack = [];
@@ -126,37 +124,6 @@ function loadData() {
     }
   }
 }
-
-function saveData() {
-  localStorage.setItem("items", JSON.stringify(items));
-}
-
-itemElement.addEventListener("touchend", function () {
-  item.count++;
-  updateUI();
-});
-
-function saveHistory() {
-  historyStack.push(JSON.stringify(items));
-
-  if (historyStack.length > 50) {
-    historyStack.shift();
-  }
-}
-
-itemElement.addEventListener("touchstart", function () {
-  pressTimer = setTimeout(() => {
-    let value = prompt("输入数量：");
-    if (value !== null) {
-      item.count = parseInt(value) || 0;
-      updateUI();
-    }
-  }, 600); // 600ms算长按
-});
-
-itemElement.addEventListener("touchend", function () {
-  clearTimeout(pressTimer);
-});
 
 let moved = false;
 
