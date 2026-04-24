@@ -244,6 +244,9 @@ function updateStats() {
     });
   });
 
+  // ⭐关键：删除虫系（不显示，但不影响计数）
+  delete stats["虫系"];
+
   document.getElementById("stats").innerText =
-    Object.entries(stats).map(([k,v]) => `${k}:${v}`).join(" ") || "暂无数据";
+    Object.entries(stats).map(([k, v]) => `${k}:${v}`).join(" ") || "暂无数据";
 }
