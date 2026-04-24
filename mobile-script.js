@@ -43,6 +43,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // ⭐ 关键：只用这一套手势
 resetBtn.addEventListener("pointerdown", (e) => {
+  e.preventDefault();   // ⭐ 阻止默认行为
   startX = e.clientX;
   startY = e.clientY;
 });
