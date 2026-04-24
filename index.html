@@ -27,6 +27,10 @@
 
   touch-action: none;
 }
+    img {
+  pointer-events: none;
+  user-select: none;
+}
     @media (max-width: 768px) {
   #container {
     grid-template-columns: repeat(5, 1fr);
@@ -43,46 +47,37 @@
 
   cursor: pointer;
 }
-    
-  .top-bar {
-    position: sticky;
-    top: 0;
-    background: white;
-    z-index: 10;
-  
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  
-    padding: 8px 10px;
-    border-bottom: 1px solid #ddd;
-  }
-    .left-text {
-  font-size: 14px;
-  font-weight: bold;
-}
-    .right-group {
+.top-bar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+
+  padding: 8px;
+  background: white;
+
+  border-bottom: 1px solid #ddd;
+}
+
+.left {
+  display: flex;
   gap: 6px;
 }
 
-.desc {
-  font-size: 10px;
-  color: #666;
-}
-    .reset-btn {
+.center {
+  flex: 1;
+  text-align: center;
   font-size: 12px;
-  padding: 6px 10px;
+  color: #333;
+}
+
+.mini-btn {
+  font-size: 12px;
+  padding: 4px 8px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
+
   background: #00bfff;
   color: white;
-}
-   .undo-btn {
-  font-size: 18px;
-  background: transparent;
-  color: #333;
 }
     button:active {
   transform: scale(0.95);
@@ -118,13 +113,19 @@
 
 <body>
 
-  <div class="top-bar">
-  <button onclick="undo()">撤回</button>
-  <button onclick="resetAll()">重置</button>
+ <div class="top-bar">
 
-  <div id="text1">统计：</div>
-  <div id="text2">提示信息</div>
+  <div class="left">
+    <button class="mini-btn" onclick="undo()">⮪</button>
+    <button class="mini-btn" onclick="resetAll()">重置</button>
   </div>
+
+  <div class="center">
+    <div id="text1">统计：0</div>
+    <div id="text2">点击+1 | 右滑-1 |长按输入</div>
+  </div>
+
+</div>
 
 <div id="container"></div>
 
