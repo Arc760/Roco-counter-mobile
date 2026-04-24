@@ -57,41 +57,16 @@ function render() {
     div.innerHTML = `
       <img src="${item.img}">
       <div>${item.name}</div>
-      <div>${item.count}</div>
+      <div class="count">${item.count}</div>
     `;
 
-    const img = div.querySelector("img");
-    bindGesture(img, i);
-
+    bindGesture(div, i);
     container.appendChild(div);
   });
 
-  updateText();
+  updateStats();
 }
 
-function updateText() {
-  let total = items.reduce((sum, i) => sum + i.count, 0);
-
-  document.getElementById("text1").innerText =
-    "总数量: " + total;
-
-  document.getElementById("text2").innerText =
-    "卡片数量: " + items.length;
-}
-
-function undo() {
-  if (historyStack.length === 0) return;
-
-  items = JSON.parse(historyStack.pop());
-  render();
-}
-
-function resetAll() {
-  items.forEach(i => i.count = 0);
-  render();
-}
-
-// 手势
 function bindGesture(el, index) {
   let startX = 0;
   let moved = false;
@@ -109,6 +84,7 @@ function bindGesture(el, index) {
       let value = prompt("输入数量");
       if (value !== null) {
         items[index].count = parseInt(value) || 0;
+        saveHistory();
         render();
       }
     }, 600);
@@ -123,23 +99,44 @@ function bindGesture(el, index) {
 
   el.addEventListener("pointerup", (e) => {
     clearTimeout(pressTimer);
-
     if (isLongPress) return;
 
     let dx = e.clientX - startX;
 
-    // 👉 右滑 -1
     if (dx > 30) {
       items[index].count--;
-    }
-    // 👉 点击 +1
-    else if (!moved) {
+    } else if (!moved) {
       items[index].count++;
     }
 
+    saveHistory();
     render();
   });
 }
 
+// ===== 顶部按钮必须有 =====
+
+function resetAll() {
+  items.forEach(i => i.count = 0);
+  render();
+}
+
+function undo() {
+  if (historyStack.length === 0) return;
+
+  items = JSON.parse(historyStack.pop());
+  render();
+}
+
+function saveHistory() {
+  historyStack.push(JSON.stringify(items));
+  if (historyStack.length > 50) historyStack.shift();
+}
+
+function updateStats() {
+  let total = items.reduce((a, b) => a + b.count, 0);
+  document.getElementById("stats").innerText = "总数：" + total;
+}
+
 // 启动
-render();
+window.onload = render;
