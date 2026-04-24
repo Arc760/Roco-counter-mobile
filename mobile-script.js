@@ -70,21 +70,21 @@ function render() {
 function bindGesture(el, index) {
   let startX = 0;
   let moved = false;
-  let pressTimer = null;
-  let isLongPress = false;
+  let timer = null;
+  let isLong = false;
 
   el.addEventListener("pointerdown", (e) => {
     startX = e.clientX;
     moved = false;
-    isLongPress = false;
+    isLong = false;
 
-    pressTimer = setTimeout(() => {
-      isLongPress = true;
+    timer = setTimeout(() => {
+      isLong = true;
 
-      let value = prompt("输入数量");
-      if (value !== null) {
-        items[index].count = parseInt(value) || 0;
-        saveHistory();
+      let v = prompt("输入数量");
+      if (v !== null) {
+        items[index].count = parseInt(v) || 0;
+        save();
         render();
       }
     }, 600);
@@ -93,13 +93,13 @@ function bindGesture(el, index) {
   el.addEventListener("pointermove", (e) => {
     if (Math.abs(e.clientX - startX) > 10) {
       moved = true;
-      clearTimeout(pressTimer);
+      clearTimeout(timer);
     }
   });
 
   el.addEventListener("pointerup", (e) => {
-    clearTimeout(pressTimer);
-    if (isLongPress) return;
+    clearTimeout(timer);
+    if (isLong) return;
 
     let dx = e.clientX - startX;
 
@@ -109,15 +109,14 @@ function bindGesture(el, index) {
       items[index].count++;
     }
 
-    saveHistory();
+    save();
     render();
   });
 }
 
-// ===== 顶部按钮必须有 =====
-
 function resetAll() {
   items.forEach(i => i.count = 0);
+  save();
   render();
 }
 
@@ -128,9 +127,16 @@ function undo() {
   render();
 }
 
-function saveHistory() {
+function save() {
+  localStorage.setItem("items", JSON.stringify(items));
   historyStack.push(JSON.stringify(items));
+
   if (historyStack.length > 50) historyStack.shift();
+}
+
+function loadData() {
+  let data = localStorage.getItem("items");
+  if (data) items = JSON.parse(data);
 }
 
 function updateStats() {
