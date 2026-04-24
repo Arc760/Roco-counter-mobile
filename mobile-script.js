@@ -112,33 +112,6 @@ window.items = [
   img: imgPath("fox.png")},
 ];
 
-function loadData() {
-  let saved = localStorage.getItem("items");
-
-  if (saved) {
-    let parsed = JSON.parse(saved);
-
-    // ⭐ 防止数据结构坏掉
-    if (Array.isArray(parsed)) {
-      items = parsed;
-    }
-  }
-}
-
-let moved = false;
-
-itemElement.addEventListener("touchmove", function () {
-  moved = true;
-});
-
-itemElement.addEventListener("touchend", function (e) {
-  if (!moved) {
-    item.count++;
-    updateUI();
-  }
-  moved = false;
-});
-
 resetBtn.addEventListener("touchstart", function (e) {
   startX = e.touches[0].clientX;
 });
