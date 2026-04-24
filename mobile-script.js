@@ -49,6 +49,7 @@ const items = [
 
 // 渲染
 function render() {
+  console.log("render running", container);
   const container = document.getElementById("container");
   container.innerHTML = "";
 
@@ -57,9 +58,8 @@ function render() {
     div.className = "item";
 
     div.innerHTML = `
-      <img src="${item.img}">
-      <div>${item.name}</div>
-      <div>${item.count}</div>
+    <div>${item.name}</div>
+    <div>${item.count}</div>
     `;
 
     bindGesture(div, i);
