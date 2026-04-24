@@ -55,16 +55,40 @@ function render() {
     div.className = "item";
 
     div.innerHTML = `
-      <img src="${item.img}" class="img">
+      <img src="${item.img}">
       <div>${item.name}</div>
       <div>${item.count}</div>
     `;
 
-    const img = div.querySelector(".img");
+    const img = div.querySelector("img");
     bindGesture(img, i);
 
     container.appendChild(div);
   });
+
+  updateText();
+}
+
+function updateText() {
+  let total = items.reduce((sum, i) => sum + i.count, 0);
+
+  document.getElementById("text1").innerText =
+    "总数量: " + total;
+
+  document.getElementById("text2").innerText =
+    "卡片数量: " + items.length;
+}
+
+function undo() {
+  if (historyStack.length === 0) return;
+
+  items = JSON.parse(historyStack.pop());
+  render();
+}
+
+function resetAll() {
+  items.forEach(i => i.count = 0);
+  render();
 }
 
 // 手势
