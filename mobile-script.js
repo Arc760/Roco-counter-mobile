@@ -1,3 +1,5 @@
+console.log("JS加载成功");
+
 let currentIndex = null;
 
 let historyStack = [];
