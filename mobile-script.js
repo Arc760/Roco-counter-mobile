@@ -1,5 +1,6 @@
+let historyStack = [];
 // 数据
-const items = [
+let items = [
   { name: "柴渣虫",type: ["火系"],count: 0,img: "roco-image/chai.png"},
 
   { name: "双灯鱼", type: ["水系"],count: 0, img: "roco-image/fish.png"},
@@ -136,7 +137,10 @@ function save() {
 
 function loadData() {
   let data = localStorage.getItem("items");
-  if (data) items = JSON.parse(data);
+
+  if (data) {
+    items = JSON.parse(data);
+  }
 }
 
 function updateStats() {
@@ -163,4 +167,7 @@ function updateStats() {
   document.getElementById("stats").innerText = text || "暂无数据";
 }
 // 启动
-window.onload = render;
+window.onload = function () {
+  loadData();
+  render();
+};
