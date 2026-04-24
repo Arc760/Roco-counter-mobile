@@ -130,21 +130,6 @@ window.render = function () {
 
   container.innerHTML = "";
 
-  items.forEach((item, i) => {
-    const itemElement = document.createElement("div");
-    itemElement.className = "item";
-
-    itemElement.innerHTML = `
-      <img src="${item.img}">
-      <div>${item.name}</div>
-      <div class="count">数量: ${item.count}</div>
-    `;
-
-    bindPointer(itemElement, i);
-
-    container.appendChild(itemElement);
-  });
-
   updateStats();
 };
 
