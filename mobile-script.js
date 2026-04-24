@@ -112,11 +112,6 @@ window.items = [
   img: imgPath("fox.png")},
 ];
 
-window.addEventListener("DOMContentLoaded", () => {
-  loadData();
-  render();
-});
-
 function loadData() {
   let saved = localStorage.getItem("items");
 
@@ -382,8 +377,10 @@ function updateStats() {
   document.getElementById("stats").innerHTML = text;
 }
 
-loadData();
-render();
+window.addEventListener("DOMContentLoaded", () => {
+  loadData();
+  render();
+});
 
 window.addEventListener("load", function () {
 
