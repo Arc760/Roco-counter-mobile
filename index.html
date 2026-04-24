@@ -32,6 +32,17 @@
     grid-template-columns: repeat(5, 1fr);
   }
 }
+    button {
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+
+  background: #00bfff;
+  color: white;
+
+  cursor: pointer;
+}
     
   .top-bar {
     position: sticky;
@@ -68,10 +79,13 @@
   background: #00bfff;
   color: white;
 }
-    .undo-btn {
+   .undo-btn {
   font-size: 18px;
-  border: none;
-  background: none;
+  background: transparent;
+  color: #333;
+}
+    button:active {
+  transform: scale(0.95);
 }
     #container {
       display: grid;
