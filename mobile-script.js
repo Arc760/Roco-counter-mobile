@@ -64,7 +64,7 @@ function render() {
     container.appendChild(div);
   });
 
-  updateStats();
+  updateStats(); // ⭐必须有
 }
 
 function bindGesture(el, index) {
@@ -140,9 +140,27 @@ function loadData() {
 }
 
 function updateStats() {
-  let total = items.reduce((a, b) => a + b.count, 0);
-  document.getElementById("stats").innerText = "总数：" + total;
-}
+  let stats = {};
 
+  items.forEach(item => {
+    let types = Array.isArray(item.type)
+      ? item.type
+      : item.type.split(",");
+
+    types.forEach(t => {
+      t = t.trim();
+      if (!stats[t]) stats[t] = 0;
+      stats[t] += item.count;
+    });
+  });
+
+  let text = "";
+
+  for (let t in stats) {
+    text += `${t}：${stats[t]}  `;
+  }
+
+  document.getElementById("stats").innerText = text || "暂无数据";
+}
 // 启动
 window.onload = render;
