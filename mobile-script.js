@@ -47,7 +47,7 @@ const items = [
 
 // 渲染
 function render() {
-  console.log("render running", container);
+  console.log("render running");
   const container = document.getElementById("container");
   container.innerHTML = "";
 
