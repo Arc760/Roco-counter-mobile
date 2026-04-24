@@ -1,7 +1,7 @@
 // 数据
 const items = [
   { name: "柴渣虫",type: ["火系"],count: 0,img: "./roco-image/chai.png"},
-  
+
   { name: "双灯鱼", type: ["水系"],count: 0, img: "./roco-image/fish.png"},
 
   { name: "月牙雪熊", type: ["冰系"], count: 0, img: "./roco-image/bear.png"},
@@ -56,9 +56,10 @@ function render() {
     div.className = "item";
 
     div.innerHTML = `
-    <div>${item.name}</div>
-    <div>${item.count}</div>
-    `;
+  <img src="${item.img}">
+  <div>${item.name}</div>
+  <div>${item.count}</div>
+`;
 
     bindGesture(div, i);
 
