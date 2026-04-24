@@ -1,8 +1,7 @@
+let pressTimer = null;
 let currentIndex = null;
 
 let historyStack = [];
-
-let isLongPress = false;
 
 function getBasePath() {
   const hostname = window.location.hostname;
@@ -19,7 +18,7 @@ function getBasePath() {
 function imgPath(file) {
   return "roco-image/" + file;
 }
-
+    
 // 🔥 S1赛季异色精灵
 window.items = [
   { name: "柴渣虫",
@@ -112,23 +111,110 @@ window.items = [
   img: imgPath("fox.png")},
 ];
 
-resetBtn.addEventListener("touchstart", function (e) {
-  startX = e.touches[0].clientX;
+window.addEventListener("DOMContentLoaded", () => {
+  loadData();
+  render();
 });
 
-resetBtn.addEventListener("touchend", function (e) {
-  let endX = e.changedTouches[0].clientX;
+function loadData() {
+  let saved = localStorage.getItem("items");
 
-  if (endX - startX > 50) {
-    openResetMenu();
+  if (saved) {
+    let parsed = JSON.parse(saved);
+
+    // ⭐ 防止数据结构坏掉
+    if (Array.isArray(parsed)) {
+      items = parsed;
+    }
   }
-});
+}
 
-window.render = function () {
+function saveData() {
+  localStorage.setItem("items", JSON.stringify(items));
+}
+
+window.addOne = function(i) {
+  saveHistory(); //有撤回效果
+
+  items[i].count++;
+  saveData();
+  render();
+}
+
+window.minusOne = function(i) {
+  saveHistory(); //有撤回效果
+
+  if (items[i].count > 0) {
+    items[i].count--;
+  }
+
+  saveData();
+  render();
+}
+
+function saveHistory() {
+  historyStack.push(JSON.stringify(items));
+
+  if (historyStack.length > 50) {
+    historyStack.shift();
+  }
+}
+
+window.handleMouseDown = function(i) {
+  currentIndex = i;
+
+  pressTimer = setTimeout(() => {
+    showPopup(i);
+  }, 600);
+};
+
+window.handleMouseUp = function() {
+  clearTimeout(pressTimer);
+};
+
+
+function showPopup(i) {
+  let num = prompt("输入数字（正数=加，负数=减）");
+
+  if (num === null) return;
+
+  num = parseInt(num);
+  if (isNaN(num)) return;
+
+  saveHistory();
+
+  items[i].count += num;
+
+  if (items[i].count < 0) items[i].count = 0;
+
+  saveData();
+  render();
+}
+
+window.render = function() {
   const container = document.getElementById("container");
   if (!container) return;
 
   container.innerHTML = "";
+
+  items.forEach((item, i) => {
+    container.innerHTML += `
+      <div class="item"
+           onclick="addOne(${i})"
+           oncontextmenu="event.preventDefault(); minusOne(${i})"
+           onmousedown="handleMouseDown(${i})"
+           onmouseup="handleMouseUp()"
+           onmouseleave="handleMouseUp()">
+
+        <img src="${item.img}"
+           onerror="this.onerror=null;this.src='roco-image/fallback.png'">
+
+        <div>${item.name}</div>
+        <div class="count">数量: ${item.count}</div>
+
+      </div>
+    `;
+  });
 
   updateStats();
 };
@@ -158,92 +244,6 @@ window.resetAll = function() {
   }
 };
 
-function bindPointer(el, index) {
-  let startX = 0;
-  let startY = 0;
-  let pressTimer = null;
-  let moved = false;
-  let isLongPress = false;
-
-  el.addEventListener("pointerdown", function (e) {
-    startX = e.clientX;
-    startY = e.clientY;
-    moved = false;
-    isLongPress = false;
-
-    pressTimer = setTimeout(() => {
-      isLongPress = true;
-
-      let value = prompt("输入数量：");
-      if (value !== null) {
-        items[index].count = parseInt(value) || 0;
-        saveData();
-        render();
-      }
-    }, 600);
-  });
-
-  el.addEventListener("pointermove", function (e) {
-    let dx = e.clientX - startX;
-    let dy = e.clientY - startY;
-
-    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-      moved = true;
-      clearTimeout(pressTimer);
-    }
-  });
-
-  el.addEventListener("pointerup", function (e) {
-    clearTimeout(pressTimer);
-
-    if (isLongPress) return; // ❗关键：长按不再触发任何操作
-
-    let dx = e.clientX - startX;
-    let dy = Math.abs(e.clientY - startY);
-
-    // 👉 右滑 = -1
-    if (dx > 30 && dy < 50) {
-      minusOne(index);
-      return;
-    }
-
-    // 👉 点击 = +1（没有移动才算）
-    if (!moved) {
-      addOne(index);
-    }
-  });
-}
-
-  el.addEventListener("pointermove", function (e) {
-    let dx = e.clientX - startX;
-    let dy = e.clientY - startY;
-
-    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-      moved = true;
-      clearTimeout(pressTimer);
-    }
-  });
-
-  el.addEventListener("pointerup", function (e) {
-    clearTimeout(pressTimer);
-
-    if (isLongPress) return; // ❗关键：长按不再触发任何操作
-
-    let dx = e.clientX - startX;
-    let dy = Math.abs(e.clientY - startY);
-
-    // 👉 右滑 = -1
-    if (dx > 30 && dy < 50) {
-      minusOne(index);
-      return;
-    }
-
-    // 👉 点击 = +1（没有移动才算）
-    if (!moved) {
-      addOne(index);
-    }
-  });
-
   document.addEventListener("DOMContentLoaded", function () {
 
   let btn = document.querySelector(".reset-btn");
@@ -253,19 +253,10 @@ function bindPointer(el, index) {
     return;
   }
 
-  let startX = 0;
-
-  btn.addEventListener("touchstart", function (e) {
-  startX = e.touches[0].clientX;
-});
-
-  btn.addEventListener("touchend", function (e) {
-  let endX = e.changedTouches[0].clientX;
-
-  if (endX - startX > 50) {
-    showResetMenu(endX, 100); // Y随便给个位置
-  }
-});
+  btn.addEventListener("contextmenu", function (e) {
+    e.preventDefault();
+    showResetMenu(e.pageX, e.pageY);
+  });
 
 });
 
@@ -304,10 +295,8 @@ function updateStats() {
   document.getElementById("stats").innerHTML = text;
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-  loadData();
-  render();
-});
+loadData();
+render();
 
 window.addEventListener("load", function () {
 
