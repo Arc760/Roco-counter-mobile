@@ -100,18 +100,19 @@ function bindGesture(el, index) {
   el.addEventListener("pointerup", (e) => {
     clearTimeout(pressTimer);
 
-    if (isLongPress) {
-    isLongPress = false;
-    return;
-}
+    if (isLongPress) return;
 
     let dx = e.clientX - startX;
 
+    // 👉 右滑 -1
     if (dx > 30) {
-  items[index].count--;
-} else if (dx < -30) {
-  items[index].count++;
-}
+      items[index].count--;
+    }
+    // 👉 点击 +1
+    else if (!moved) {
+      items[index].count++;
+    }
+
     render();
   });
 }
