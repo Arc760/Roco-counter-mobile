@@ -166,6 +166,15 @@ function updateStats() {
 
   document.getElementById("stats").innerText = text || "暂无数据";
 }
+window.addEventListener("DOMContentLoaded", () => {
+
+  document.querySelector(".reset-btn")
+    .addEventListener("click", resetAll);
+
+  document.querySelector(".undo-btn")
+    .addEventListener("click", undo);
+
+});
 // 启动
 window.onload = function () {
   loadData();
