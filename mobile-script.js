@@ -9,6 +9,7 @@ items = [
   { name: "双灯鱼", type: ["水系"], count: 0, img: "./roco-image/fish.png" },
   { name: "月牙雪熊", type: ["冰系"], count: 0, img: "./roco-image/bear.png" },
   { name: "粉粉星", type: ["电系"], count: 0, img: "./roco-image/star.png" },
+
   { name: "空空颅", type: ["幽系"], count: 0, img: "./roco-image/skull.png" },
   { name: "嗜光嗡嗡", type: ["恶系"], count: 0, img: "./roco-image/mosquito.png" },
   { name: "贝瑟", type: ["机械系"], count: 0, img: "./roco-image/pot.png" },
@@ -18,6 +19,7 @@ items = [
   { name: "奇丽草", type: ["草系"], count: 0, img: "./roco-image/grass.png" },
   { name: "治愈兔", type: ["火系"], count: 0, img: "./roco-image/rabbit.png" },
   { name: "呼呼猪", type: ["冰系"], count: 0, img: "./roco-image/pig.png" },
+  
   { name: "大耳帽兜", type: ["冰系"], count: 0, img: "./roco-image/dou.png" },
   { name: "拉特", type: ["电系"], count: 0, img: "./roco-image/rai.png" },
   { name: "恶魔狼", type: ["恶系"], count: 0, img: "./roco-image/wolf.png" },
