@@ -244,6 +244,7 @@ function updateStats() {
     });
   });
 
+  // ⭐关键：删除虫系（不显示，但不影响计数）
   delete stats["虫系"];
 
   document.getElementById("stats").innerText =
