@@ -1,6 +1,17 @@
 let items = [];
-let resetBtn = null;
-let undoBtn = null;
+let resetBtn, undoBtn;
+
+/* ===== 初始化 ===== */
+window.addEventListener("DOMContentLoaded", () => {
+  loadData();
+  render();
+
+  resetBtn = document.querySelector(".reset-btn");
+  undoBtn = document.querySelector(".undo-btn");
+
+  resetBtn?.addEventListener("click", resetAll);
+  undoBtn?.addEventListener("click", undo);
+});
 
 /* ===== 数据 ===== */
 items = [
@@ -33,35 +44,7 @@ items = [
   { name: "影狸", type: ["幽系"], count: 0, img: "./roco-image/fox.png" }
 ];
 
-/* ===== 初始化 ===== */
-window.addEventListener("DOMContentLoaded", () => {
-  console.log("JS 已加载");
-
-  loadData();
-  render();
-
-  resetBtn = document.querySelector(".reset-btn");
-  undoBtn = document.querySelector(".undo-btn");
-
-  console.log("resetBtn:", resetBtn);
-  console.log("undoBtn:", undoBtn);
-
-  if (resetBtn) {
-    resetBtn.addEventListener("click", () => {
-      console.log("重置点击");
-      resetAll();
-    });
-  }
-
-  if (undoBtn) {
-    undoBtn.addEventListener("click", () => {
-      console.log("撤回点击");
-      undo();
-    });
-  }
-});
-
-/* ===== 渲染核心 ===== */
+/* ===== 渲染（核心稳定版） ===== */
 function render() {
   const container = document.getElementById("container");
   container.innerHTML = "";
@@ -78,7 +61,6 @@ function render() {
 
       const i = col * ROWS + row;
 
-      // 空格规则
       const isEmpty =
         (col === 4 && row === 3) ||
         (col === 5 && row === 3);
@@ -86,11 +68,11 @@ function render() {
       if (isEmpty) {
         grid[i] = { empty: true };
       } else {
-        grid[i] = {
-          ...items[itemIndex],
-          index: itemIndex
-        };
-        itemIndex++;
+        const item = items[itemIndex++];
+
+        if (item) {
+          grid[i] = { ...item, index: itemIndex - 1 };
+        }
       }
     }
   }
@@ -106,7 +88,7 @@ function render() {
 function createItem(item) {
   const div = document.createElement("div");
 
-  if (item.empty || !item.name) {
+  if (!item || item.empty) {
     div.className = "item empty";
     return div;
   }
@@ -125,37 +107,33 @@ function createItem(item) {
   return div;
 }
 
-/* ===== 手势 ===== */
+/* ===== 手势（稳定版） ===== */
 function bindGesture(el, index) {
   let startX = 0;
   let startY = 0;
-  let timer = null;
-  let isLong = false;
+  let timer;
 
-  el.addEventListener("pointerdown", (e) => {
+  el.addEventListener("pointerdown", e => {
     startX = e.clientX;
     startY = e.clientY;
-    isLong = false;
 
     timer = setTimeout(() => {
-      isLong = true;
       let v = prompt("输入数量");
       if (v !== null) {
-        items[index].count = parseInt(v) || 0;
+        items[index].count = Number(v) || 0;
         save();
         render();
       }
     }, 600);
   });
 
-  el.addEventListener("pointerup", (e) => {
+  el.addEventListener("pointerup", e => {
     clearTimeout(timer);
-    if (isLong) return;
 
     let dx = e.clientX - startX;
-    let dy = e.clientY - startY;
+    let dy = Math.abs(e.clientY - startY);
 
-    if (Math.abs(dx) > Math.abs(dy) && dx > 40) {
+    if (dx > 40 && dx > dy) {
       items[index].count--;
       save();
       render();
@@ -177,7 +155,7 @@ function resetAll() {
   render();
 }
 
-/* ===== 撤销 ===== */
+/* ===== 撤回 ===== */
 let history = [];
 
 function save() {
@@ -187,7 +165,16 @@ function save() {
 
 function loadData() {
   const data = localStorage.getItem("items");
-  if (data) items = JSON.parse(data);
+
+  if (data) {
+    const parsed = JSON.parse(data);
+
+    // 🔥 防止 type 被污染
+    items = parsed.map(i => ({
+      ...i,
+      type: Array.isArray(i.type) ? i.type : [i.type]
+    }));
+  }
 }
 
 function undo() {
@@ -196,12 +183,14 @@ function undo() {
   render();
 }
 
-/* ===== 统计 ===== */
+/* ===== 统计（稳定版） ===== */
 function updateStats() {
   let stats = {};
 
   items.forEach(item => {
-    (item.type || []).forEach(t => {
+    let types = Array.isArray(item.type) ? item.type : [item.type];
+
+    types.forEach(t => {
       stats[t] = (stats[t] || 0) + item.count;
     });
   });
