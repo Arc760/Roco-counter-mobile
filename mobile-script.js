@@ -19,7 +19,7 @@ items = [
   { name: "奇丽草", type: ["草系"], count: 0, img: "./roco-image/grass.png" },
   { name: "治愈兔", type: ["火系"], count: 0, img: "./roco-image/rabbit.png" },
   { name: "呼呼猪", type: ["冰系"], count: 0, img: "./roco-image/pig.png" },
-  
+
   { name: "大耳帽兜", type: ["冰系"], count: 0, img: "./roco-image/dou.png" },
   { name: "拉特", type: ["电系"], count: 0, img: "./roco-image/rai.png" },
   { name: "恶魔狼", type: ["恶系"], count: 0, img: "./roco-image/wolf.png" },
@@ -27,11 +27,12 @@ items = [
 
   { name: "绒绒", type: ["绒绒"], count: 0, img: "./roco-image/rong.png" },
   { name: "犀角鸟", type: ["犀角鸟"], count: 0, img: "./roco-image/mop.png" },
-
   { name: "火红尾", type: ["火系"], count: 0, img: "./roco-image/horse.png" },
+
   { name: "果冻", type: ["水系"], count: 0, img: "./roco-image/jelly.png" },
   { name: "星尘虫", type: ["虫系"], count: 0, img: "./roco-image/ladybug.png" },
-  { name: "影狸", type: ["幽系"], count: 0, img: "./roco-image/fox.png" }
+  { name: "影狸", type: ["幽系"], count: 0, img: "./roco-image/fox.png" },
+
 ];
 
 /* ===== 初始化 ===== */
@@ -170,23 +171,70 @@ function render() {
   const container = document.getElementById("container");
   container.innerHTML = "";
 
-  items.forEach((item, i) => {
-    const div = document.createElement("div");
-    div.className = "item";
+  const COLS = 6;
+  const ROWS = 4;
 
-    div.innerHTML = `
-      <img src="${item.img}">
-      <div>${item.name}</div>
-      <div class="count ${item.count > 0 ? "active" : ""}">
-        ${item.count}
-      </div>
-    `;
+  // 1️⃣ 先生成24格布局（纯结构）
+  let grid = Array(24).fill(null);
 
-    bindGesture(div, i);
-    container.appendChild(div);
+  for (let col = 0; col < COLS; col++) {
+    for (let row = 0; row < ROWS; row++) {
+
+      const i = col * ROWS + row;
+
+      const isEmpty =
+        (col === 4 && row === 3) ||
+        (col === 5 && row === 3); // ⭐只留2个空格
+
+      grid[i] = isEmpty ? { empty: true } : null;
+    }
+  }
+
+  // 2️⃣ 再顺序填 items（只填非空格）
+  let itemIndex = 0;
+
+  for (let i = 0; i < grid.length; i++) {
+    if (grid[i] === null) {
+      grid[i] = items[itemIndex++] || { empty: true };
+    }
+  }
+
+  // 3️⃣ 渲染
+  grid.forEach((item, i) => {
+    container.appendChild(createItem(item, i));
   });
 
-  updateStats();
+  console.log("items:", items.length);
+  console.log("used:", itemIndex);
+}
+
+function createItem(item, index) {
+  const div = document.createElement("div");
+
+  if (item.empty) {
+    div.className = "item empty";
+    return div;
+  }
+
+  div.className = "item";
+
+  div.innerHTML = `
+    <img src="${item.img}">
+    <div>${item.name}</div>
+    <div class="count ${item.count > 0 ? "active" : ""}">
+      ${item.count}
+    </div>
+  `;
+
+  bindGesture(div, index);
+  return div;
+}
+
+function getSlot(index) {
+  const row = Math.floor(index / 6);
+  const col = index % 6;
+
+  return { row, col };
 }
 
 /* ===== 点击/滑动 ===== */
