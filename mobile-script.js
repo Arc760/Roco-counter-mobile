@@ -53,27 +53,26 @@ window.addEventListener("DOMContentLoaded", () => {
   let moved = false;
 
   // ⭐ 关键：只用这一套手势
-resetBtn.addEventListener("pointerdown", (e) => {
-  e.preventDefault();   // ⭐ 阻止默认行为
-  startX = e.clientX;
-  startY = e.clientY;
+resetBtn.addEventListener("touchstart", (e) => {
+  const touch = e.touches[0];
+  startX = touch.clientX;
+  startY = touch.clientY;
 });
 
-resetBtn.addEventListener("pointerup", (e) => {
-  const dx = e.clientX - startX;
-  const dy = Math.abs(e.clientY - startY);
+resetBtn.addEventListener("touchend", (e) => {
+  const touch = e.changedTouches[0];
+  const dx = touch.clientX - startX;
+  const dy = Math.abs(touch.clientY - startY);
 
-  console.log("dx:", dx, "dy:", dy); // ⭐调试用
+  console.log("dx:", dx, "dy:", dy);
 
   // 👉 右滑打开菜单
-  if (dx > 25 && dx > dy) {
-    e.preventDefault();
-    e.stopPropagation();
-    showResetMenu(e.pageX, e.pageY);
+  if (dx > 30 && dx > dy) {
+    showResetMenu(touch.pageX, touch.pageY);
     return;
   }
 
-  // 👉 点击才重置
+  // 👉 点击重置
   resetAll();
 });
 
