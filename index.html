@@ -81,18 +81,23 @@ button:active {
 /* 网格 */
 #container {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* ⭐手机固定4列 */
-  gap: 8px;
-  padding: 10px;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 4px;
+  padding: 6px;
+
+  grid-auto-flow: column; /* ⭐关键 */
 }
 
 /* 卡片 */
 .item {
   background: white;
-  border-radius: 12px;
   padding: 6px;
+  border-radius: 8px;
   text-align: center;
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+
+  font-size: 10px;
 
   display: flex;
   flex-direction: column;
@@ -102,18 +107,41 @@ button:active {
   touch-action: none;
   
   -webkit-tap-highlight-color: transparent;
+
+  aspect-ratio: 1 / 1;
 }
 
 /* 图片 */
 .item img {
   width: 100%;
-  height: 60px;
+  height: 70px;
   object-fit: contain;
+  display: block;
 }
 
 /* 名字 */
 .item div {
   font-size: 11px;
+}
+
+.item.empty {
+  background: transparent;
+  box-shadow: none;
+}
+
+#grid16, #grid6 {
+  display: grid;
+  gap: 4px;
+}
+
+/* 上面 4×4 */
+#grid16 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* 下面 3×2 */
+#grid6 {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 /* 数字 */
@@ -209,6 +237,9 @@ button:active {
     <div id="nameList" class="menu-right"></div>
   </div>
 </div>
+
+<div id="grid16"></div>
+<div id="grid6"></div>
 
 <script src="./mobile-script.js" defer></script>
 
