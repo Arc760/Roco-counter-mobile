@@ -1,17 +1,8 @@
 let items = [];
-let resetBtn, undoBtn;
+let history = [];
 
-/* ===== 初始化 ===== */
-window.addEventListener("DOMContentLoaded", () => {
-  loadData();
-  render();
-
-  resetBtn = document.querySelector(".reset-btn");
-  undoBtn = document.querySelector(".undo-btn");
-
-  resetBtn?.addEventListener("click", resetAll);
-  undoBtn?.addEventListener("click", undo);
-});
+const COLS = 6;
+const ROWS = 4;
 
 /* ===== 数据 ===== */
 items = [
@@ -44,35 +35,39 @@ items = [
   { name: "影狸", type: ["幽系"], count: 0, img: "./roco-image/fox.png" }
 ];
 
-/* ===== 渲染（核心稳定版） ===== */
+/* ===== 初始化 ===== */
+window.addEventListener("DOMContentLoaded", () => {
+  load();
+  render();
+
+  document.querySelector(".reset-btn").addEventListener("click", resetAll);
+  document.querySelector(".undo-btn").addEventListener("click", undo);
+});
+
+/* ===== 渲染 ===== */
 function render() {
   const container = document.getElementById("container");
   container.innerHTML = "";
 
-  const COLS = 6;
-  const ROWS = 4;
-
   let grid = Array(COLS * ROWS).fill(null);
 
-  let itemIndex = 0;
+  let idx = 0;
 
   for (let col = 0; col < COLS; col++) {
     for (let row = 0; row < ROWS; row++) {
 
       const i = col * ROWS + row;
 
-      const isEmpty =
+      const empty =
         (col === 4 && row === 3) ||
         (col === 5 && row === 3);
 
-      if (isEmpty) {
+      if (empty) {
         grid[i] = { empty: true };
       } else {
-        const item = items[itemIndex++];
-
-        if (item) {
-          grid[i] = { ...item, index: itemIndex - 1 };
-        }
+        grid[i] = items[idx]
+          ? { ...items[idx], realIndex: idx++ }
+          : { empty: true };
       }
     }
   }
@@ -88,7 +83,7 @@ function render() {
 function createItem(item) {
   const div = document.createElement("div");
 
-  if (!item || item.empty) {
+  if (item.empty) {
     div.className = "item empty";
     return div;
   }
@@ -98,12 +93,12 @@ function createItem(item) {
   div.innerHTML = `
     <img src="${item.img}">
     <div>${item.name}</div>
-    <div class="count ${item.count > 0 ? "active" : ""}">
+    <div class="count ${item.count ? "active" : ""}">
       ${item.count}
     </div>
   `;
 
-  bindGesture(div, item.index);
+  bindGesture(div, item.realIndex);
   return div;
 }
 
@@ -113,26 +108,29 @@ function bindGesture(el, index) {
   let startY = 0;
   let timer;
 
-  el.addEventListener("pointerdown", e => {
-    startX = e.clientX;
-    startY = e.clientY;
+  el.addEventListener("touchstart", e => {
+    const t = e.touches[0];
+    startX = t.clientX;
+    startY = t.clientY;
 
     timer = setTimeout(() => {
-      let v = prompt("输入数量");
+      const v = prompt("输入数量");
       if (v !== null) {
-        items[index].count = Number(v) || 0;
+        items[index].count = +v || 0;
         save();
         render();
       }
     }, 600);
   });
 
-  el.addEventListener("pointerup", e => {
+  el.addEventListener("touchend", e => {
     clearTimeout(timer);
 
-    let dx = e.clientX - startX;
-    let dy = Math.abs(e.clientY - startY);
+    const t = e.changedTouches[0];
+    const dx = t.clientX - startX;
+    const dy = Math.abs(t.clientY - startY);
 
+    // 👉 右滑
     if (dx > 40 && dx > dy) {
       items[index].count--;
       save();
@@ -140,6 +138,7 @@ function bindGesture(el, index) {
       return;
     }
 
+    // 👉 点击
     if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
       items[index].count++;
       save();
@@ -155,42 +154,31 @@ function resetAll() {
   render();
 }
 
-/* ===== 撤回 ===== */
-let history = [];
+/* ===== undo ===== */
+function undo() {
+  const last = history.pop();
+  if (!last) return;
+  items = JSON.parse(last);
+  render();
+}
 
+/* ===== 存储 ===== */
 function save() {
   history.push(JSON.stringify(items));
   localStorage.setItem("items", JSON.stringify(items));
 }
 
-function loadData() {
+function load() {
   const data = localStorage.getItem("items");
-
-  if (data) {
-    const parsed = JSON.parse(data);
-
-    // 🔥 防止 type 被污染
-    items = parsed.map(i => ({
-      ...i,
-      type: Array.isArray(i.type) ? i.type : [i.type]
-    }));
-  }
+  if (data) items = JSON.parse(data);
 }
 
-function undo() {
-  if (!history.length) return;
-  items = JSON.parse(history.pop());
-  render();
-}
-
-/* ===== 统计（稳定版） ===== */
+/* ===== 统计 ===== */
 function updateStats() {
   let stats = {};
 
   items.forEach(item => {
-    let types = Array.isArray(item.type) ? item.type : [item.type];
-
-    types.forEach(t => {
+    (item.type || []).forEach(t => {
       stats[t] = (stats[t] || 0) + item.count;
     });
   });
@@ -200,5 +188,5 @@ function updateStats() {
   document.getElementById("stats").innerText =
     Object.entries(stats)
       .map(([k, v]) => `${k}:${v}`)
-      .join(" ") || "暂无数据";
+      .join(" ");
 }
