@@ -41,7 +41,6 @@ window.addEventListener("DOMContentLoaded", () => {
   render();
 
   container.style.display = "grid";
-  container.style.gridTemplateColumns = "repeat(6, 1fr)";
 
   resetBtn = document.querySelector(".reset-btn");
   undoBtn = document.querySelector(".undo-btn");
@@ -172,43 +171,25 @@ function loadData() {
 /* ===== 渲染 ===== */
 function render() {
   const container = document.getElementById("container");
+  if (!container) return;
+
   container.innerHTML = "";
 
-  const COLS = 6;
-  const ROWS = 4;
+  // ✅ 自动布局（不强制列数）
+  container.style.display = "grid";
+  container.style.gridTemplateColumns = "repeat(auto-fill, minmax(80px, 1fr))";
+  container.style.gap = "6px";
+  container.style.padding = "6px";
 
-  // 1️⃣ 先生成24格布局（纯结构）
-  let grid = Array(24).fill(null);
+  // 避免统计栏被挤压
+  container.style.alignItems = "start";
 
-  for (let col = 0; col < COLS; col++) {
-    for (let row = 0; row < ROWS; row++) {
-
-      const i = col * ROWS + row;
-
-      const isEmpty =
-        (col === 4 && row === 3) ||
-        (col === 5 && row === 3); // ⭐只留2个空格
-
-      grid[i] = isEmpty ? { empty: true } : null;
-    }
-  }
-
-  // 2️⃣ 再顺序填 items（只填非空格）
-  let itemIndex = 0;
-
-  for (let i = 0; i < grid.length; i++) {
-    if (grid[i] === null) {
-      grid[i] = items[itemIndex++] || { empty: true };
-    }
-  }
-
-  // 3️⃣ 渲染
-  grid.forEach((item, i) => {
-    container.appendChild(createItem(item, i));
+  items.forEach((item, index) => {
+    const div = createItem(item, index);
+    container.appendChild(div);
   });
 
-  console.log("items:", items.length);
-  console.log("used:", itemIndex);
+  updateStats();
 }
 
 function createItem(item, index) {
@@ -244,49 +225,68 @@ function getSlot(index) {
 function bindGesture(el, index) {
   let startX = 0;
   let startY = 0;
+  let moved = false;
   let timer = null;
-  let isLong = false;
 
-  const SWIPE = 40;
+  const SWIPE = 30; // 稍微放宽一点
 
   el.addEventListener("pointerdown", (e) => {
     startX = e.clientX;
     startY = e.clientY;
-    isLong = false;
+    moved = false;
+
+    el.setPointerCapture(e.pointerId); // ⭐⭐⭐关键修复
 
     timer = setTimeout(() => {
-      isLong = true;
-      let v = prompt("输入数量");
-      if (v !== null) {
-        items[index].count = parseInt(v) || 0;
-        save();
-        render();
+      if (!moved) {
+        let v = prompt("输入数量");
+        if (v !== null) {
+          items[index].count = parseInt(v) || 0;
+          save();
+          render();
+        }
       }
-    }, 600);
+    }, 500);
+  });
+
+  el.addEventListener("pointermove", (e) => {
+    let dx = e.clientX - startX;
+    let dy = e.clientY - startY;
+
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+      moved = true;
+      clearTimeout(timer);
+    }
   });
 
   el.addEventListener("pointerup", (e) => {
     clearTimeout(timer);
-    if (isLong) return;
 
     let dx = e.clientX - startX;
     let dy = e.clientY - startY;
 
-    if (Math.abs(dx) > Math.abs(dy) && dx > SWIPE) {
-      items[index].count--;
+    el.releasePointerCapture(e.pointerId); // ⭐⭐⭐释放
+
+    // 👉 右滑 -1
+    if (dx > SWIPE && Math.abs(dx) > Math.abs(dy)) {
+      items[index].count = Math.max(0, items[index].count - 1);
       save();
       render();
       return;
     }
 
-    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+    // 👉 点击 +1
+    if (!moved && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
       items[index].count++;
       save();
       render();
     }
   });
-}
 
+  el.addEventListener("pointercancel", () => {
+    clearTimeout(timer);
+  });
+}
 /* ===== 统计 ===== */
 function updateStats() {
   let stats = {};
