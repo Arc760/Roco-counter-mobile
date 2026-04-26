@@ -80,57 +80,62 @@ function showShinyDex() {
   render();
 }
 
+function pushHistory() {
+  historyStack.push(JSON.stringify(items));
+}
+
 /* ===== 初始化 ===== */
 window.addEventListener("DOMContentLoaded", () => {
   loadData();
   render();
 
-  container.style.display = "grid";
+  const resetBtn = document.querySelector(".reset-btn");
+  const undoBtn = document.querySelector(".undo-btn");
 
-  resetBtn = document.querySelector(".reset-btn");
-  undoBtn = document.querySelector(".undo-btn");
+  console.log("undoBtn:", undoBtn); // ⭐先确认有没有找到
 
-  if (!resetBtn) {
-    console.log("❌ reset-btn 没找到");
-    return;
-  }
-
-  let startX = 0;
-  let startY = 0;
-  let moved = false;
-
-  // ⭐ 关键：只用这一套手势
-resetBtn.addEventListener("pointerdown", (e) => {
-  e.preventDefault();   // ⭐ 阻止默认行为
-  startX = e.clientX;
-  startY = e.clientY;
-
-  moved = false;
-});
-
-resetBtn.addEventListener("pointerup", (e) => {
-  const dx = e.clientX - startX;
-  const dy = Math.abs(e.clientY - startY);
-
-  console.log("dx:", dx, "dy:", dy); // ⭐调试用
-
-  // 👉 右滑打开菜单
-  if (dx > 25 && dx > dy) {
-    e.preventDefault();
-    e.stopPropagation();
-    showResetMenu(e.pageX, e.pageY);
-    return;
-  }
-
-  // 👉 点击才重置
-  resetAll();
-});
-
-  undoBtn.addEventListener("click", undo);
+  // ===== 撤回按钮（只保留这一种写法）=====
   if (undoBtn) {
-  undoBtn.onclick = undo;
-}
+    undoBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      undo();
+    });
+  } else {
+    console.log("❌ undoBtn 没找到，请检查HTML class");
+  }
+
+  // ===== reset按钮 =====
+  if (resetBtn) {
+    let startX = 0;
+    let startY = 0;
+    let moved = false;
+
+    resetBtn.addEventListener("pointerdown", (e) => {
+      startX = e.clientX;
+      startY = e.clientY;
+      moved = false;
+    });
+
+    resetBtn.addEventListener("pointermove", (e) => {
+      if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) {
+        moved = true;
+      }
+    });
+
+    resetBtn.addEventListener("pointerup", (e) => {
+      const dx = e.clientX - startX;
+      const dy = Math.abs(e.clientY - startY);
+
+      if (dx > 25 && Math.abs(dy) < 20) {
+        showResetMenu(e.pageX, e.pageY);
+        return;
+      }
+
+      if (!moved) resetAll();
+    });
+  }
 });
+
 
   // ===== 菜单控制 =====
 const menuBtn = document.querySelector(".menu-btn");
@@ -226,10 +231,11 @@ function resetByType(type) {
 }
 
 function resetAll() {
+  pushHistory();
   items.forEach(i => i.count = 0);
   save();
   render();
-}
+  }
 
 function undo() {
   if (!historyStack.length) return;
@@ -344,21 +350,24 @@ function bindGesture(el, index) {
   let startY = 0;
   let moved = false;
   let timer = null;
+  let pointerId = null;
 
-  const SWIPE = 25;
+  const SWIPE = 30;
 
   el.addEventListener("pointerdown", (e) => {
+    pointerId = e.pointerId;
     startX = e.clientX;
     startY = e.clientY;
     moved = false;
 
-    // ❗锁住手势
-    el.setPointerCapture(e.pointerId);
+    el.setPointerCapture(pointerId);
 
+    // ⭐ 长按输入
     timer = setTimeout(() => {
       if (!moved) {
         let v = prompt("输入数量");
         if (v !== null) {
+          pushHistory?.();
           items[index].count = parseInt(v) || 0;
           save();
           render();
@@ -368,24 +377,34 @@ function bindGesture(el, index) {
   });
 
   el.addEventListener("pointermove", (e) => {
-    let dx = e.clientX - startX;
-    let dy = e.clientY - startY;
+    if (e.pointerId !== pointerId) return;
 
-    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
       moved = true;
       clearTimeout(timer);
     }
   });
 
   el.addEventListener("pointerup", (e) => {
+    if (e.pointerId !== pointerId) return;
+
     clearTimeout(timer);
-    el.releasePointerCapture(e.pointerId);
+    el.releasePointerCapture(pointerId);
 
-    let dx = e.clientX - startX;
-    let dy = e.clientY - startY;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
 
-    // ⭐⭐⭐ 核心：先判断滑动
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE) {
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+
+    // =========================
+    // 👉 1. 右滑 / 左滑
+    // =========================
+    if (absX > absY && absX > SWIPE) {
+      pushHistory?.();
 
       if (dx > 0) {
         // 👉 右滑 -1
@@ -400,8 +419,11 @@ function bindGesture(el, index) {
       return;
     }
 
-    // 👉 点击 +1
-    if (!moved && Math.abs(dx) < 5 && Math.abs(dy) < 5) {
+    // =========================
+    // 👉 2. 点击 +1
+    // =========================
+    if (!moved && absX < 5 && absY < 5) {
+      pushHistory?.();
       items[index].count++;
       save();
       render();
@@ -410,12 +432,8 @@ function bindGesture(el, index) {
 
   el.addEventListener("pointercancel", () => {
     clearTimeout(timer);
-    
+    pointerId = null;
   });
-  el.addEventListener("click", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-});
 }
 
 /* ===== 统计 ===== */
@@ -448,4 +466,8 @@ function updateStats() {
 
     box.appendChild(div);
   });
+
+  function saveHistory() {
+  pushHistory();
+}
 }
