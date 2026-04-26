@@ -3,6 +3,8 @@ let historyStack = [];
 let resetBtn = null;
 let undoBtn = null;
 
+let mode = "normal";
+
 /* ===== 数据 ===== */
 items = [
   { name: "柴渣虫", type: ["火系"], count: 0, img: "roco-image/chai.png" },
@@ -34,6 +36,49 @@ items = [
   { name: "影狸", type: ["幽系"], count: 0, img: "roco-image/fox.png" },
 
 ];
+
+const shinyList = [
+  "chai.png",
+  "fish.png",
+  "bear.png",
+  "star.png",
+  "skull.png",
+  "mosquito.png",
+  "pot.png",
+  "zai.png",
+  "seed.png",
+  "grass.png",
+  "rabbit.png",
+  "pig.png",
+  "dou.png",
+  "rai.png",
+  "wolf.png",
+  "cube.png",
+  "rong.png",
+  "mop.png",
+  "horse.png"
+];
+
+function hasShiny(item) {
+  const file = item.img.split("/").pop();
+  return shinyList.includes(file);
+}
+
+// ===== 异色数据 =====
+function getShinyItems() {
+  return items.map(item => {
+    return {
+      ...item,
+      img: item.img.replace("roco-image/", "roco-image/shiny/")
+    };
+  });
+}
+
+// ===== 显示异色图鉴 =====
+function showShinyDex() {
+  mode = "shiny";
+  render();
+}
 
 /* ===== 初始化 ===== */
 window.addEventListener("DOMContentLoaded", () => {
@@ -85,6 +130,21 @@ resetBtn.addEventListener("pointerup", (e) => {
   if (undoBtn) {
   undoBtn.onclick = undo;
 }
+});
+
+  // ===== 菜单控制 =====
+const menuBtn = document.querySelector(".menu-btn");
+const mainMenu = document.getElementById("mainMenu");
+
+menuBtn.onclick = (e) => {
+  e.stopPropagation();
+  mainMenu.style.display =
+    mainMenu.style.display === "block" ? "none" : "block";
+};
+
+// 点其他地方关闭
+document.addEventListener("click", () => {
+  mainMenu.style.display = "none";
 });
 
 /* ===== 菜单 ===== */
@@ -193,48 +253,84 @@ function render() {
   const container = document.getElementById("container");
   if (!container) return;
 
-  container.innerHTML = "";
+  // ⭐普通模式
+  let renderList = items;
 
-  // ✅ 自动布局（不强制列数）
-  container.style.display = "grid";
-  container.style.gridTemplateColumns = "repeat(auto-fill, minmax(80px, 1fr))";
-  container.style.gap = "6px";
-  container.style.padding = "6px";
+  // ⭐异色模式：过滤掉没有异色的
+  if (mode === "shiny") {
+    renderList = items.filter(item => hasShiny(item));
+  }
 
-  // 避免统计栏被挤压
-  container.style.alignItems = "start";
+  // ⭐首次创建
+  if (container.children.length === 0) {
+    renderList.forEach((item, index) => {
+      container.appendChild(createItem(item, index));
+    });
+    return;
+  }
 
-  items.forEach((item, index) => {
-    const div = createItem(item, index);
-    container.appendChild(div);
+  // ⭐更新模式（不重建）
+  const cards = container.querySelectorAll(".item");
+
+  cards.forEach((card, i) => {
+    const item = renderList[i];
+    if (!item) {
+      card.style.display = "none"; // ⭐多余卡片隐藏
+      return;
+    }
+
+    card.style.display = "flex";
+
+    const img = card.querySelector("img");
+    const count = card.querySelector(".count");
+
+    const file = item.img.split("/").pop();
+
+    img.src =
+      mode === "shiny"
+        ? "roco-image/shiny/" + file
+        : item.img;
+
+    count.textContent = item.count;
   });
 
   updateStats();
 }
 
-function createItem(item, index) {
-  const div = document.createElement("div");
-
-  const img = new Image(); // ⭐预加载
-  img.src = item.img;
-  img.loading = "eager";
-
-  div.className = "item";
-
-  div.appendChild(img);
-  img.style.width = "80%";
-
-  div.innerHTML += `
-    <div>${item.name}</div>
-    <div class="count ${item.count > 0 ? "active" : ""}">
-      ${item.count}
-    </div>
-  `;
-
-  bindGesture(div, index);
-  return div;
+function switchMode(m) {
+  mode = m;
+  render(); // ⭐必须调用
 }
 
+function createItem(item, index) {
+  const div = document.createElement("div");
+  div.className = "item";
+
+  const img = document.createElement("img");
+  img.draggable = false;
+
+  const file = item.img.split("/").pop();
+
+  img.src =
+    mode === "shiny"
+      ? "roco-image/shiny/" + file
+      : item.img;
+
+  const name = document.createElement("div");
+  name.textContent = item.name;
+
+  const count = document.createElement("div");
+  count.className = "count";
+  count.textContent = item.count;
+
+  div.appendChild(img);
+  div.appendChild(name);
+  div.appendChild(count);
+
+  bindGesture(div, index);
+
+  return div;
+}
 function getSlot(index) {
   const row = Math.floor(index / 6);
   const col = index % 6;
@@ -324,17 +420,23 @@ function bindGesture(el, index) {
 
 /* ===== 统计 ===== */
 function updateStats() {
+  const box = document.getElementById("stats");
+
+  // ⭐必须清空
+  box.innerHTML = "";
+
   let stats = {};
 
   items.forEach(item => {
-    (Array.isArray(item.type) ? item.type : [item.type]).forEach(t => {
+    const types = Array.isArray(item.type) ? item.type : [item.type];
+
+    types.forEach(t => {
       if (t === "虫系") return;
-      stats[t] = (stats[t] || 0) + item.count;
+
+      // ⭐必须基于当前值重新计算（不会叠加）
+      stats[t] = (stats[t] || 0) + Number(item.count || 0);
     });
   });
-
-  const box = document.getElementById("stats");
-  box.innerHTML = "";
 
   Object.entries(stats).forEach(([k, v]) => {
     const div = document.createElement("div");
@@ -342,10 +444,7 @@ function updateStats() {
 
     div.textContent = `${k}: ${v}`;
 
-    // ⭐只要不是0就变黑
-    if (v > 0) {
-      div.classList.add("active");
-    }
+    if (v > 0) div.classList.add("active");
 
     box.appendChild(div);
   });
