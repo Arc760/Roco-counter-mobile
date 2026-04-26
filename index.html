@@ -1,317 +1,265 @@
-let items = [];
-let historyStack = [];
-let resetBtn = null;
-let undoBtn = null;
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta charset="UTF-8">
+<title>计数器</title>
 
-/* ===== 数据 ===== */
-items = [
-  { name: "柴渣虫", type: ["火系"], count: 0, img: "roco-image/chai.png" },
-  { name: "双灯鱼", type: ["水系"], count: 0, img: "roco-image/fish.png" },
-  { name: "月牙雪熊", type: ["冰系"], count: 0, img: "roco-image/bear.png" },
-  { name: "粉粉星", type: ["电系"], count: 0, img: "roco-image/star.png" },
+<style>
 
-  { name: "空空颅", type: ["幽系"], count: 0, img: "roco-image/skull.png" },
-  { name: "嗜光嗡嗡", type: ["恶系"], count: 0, img: "roco-image/mosquito.png" },
-  { name: "贝瑟", type: ["机械系"], count: 0, img: "roco-image/pot.png" },
-  { name: "粉星仔", type: ["幻系"], count: 0, img: "roco-image/zai.png" },
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
 
-  { name: "格兰种子", type: ["草系"], count: 0, img: "roco-image/seed.png" },
-  { name: "奇丽草", type: ["草系"], count: 0, img: "roco-image/grass.png" },
-  { name: "治愈兔", type: ["火系"], count: 0, img: "roco-image/rabbit.png" },
-  { name: "呼呼猪", type: ["冰系"], count: 0, img: "roco-image/pig.png" },
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #f5f5f5;
+  user-select: none;
+  -webkit-user-select: none;
+  overflow-x: hidden;
+}
 
-  { name: "大耳帽兜", type: ["冰系"], count: 0, img: "roco-image/dou.png" },
-  { name: "拉特", type: ["电系"], count: 0, img: "roco-image/rai.png" },
-  { name: "恶魔狼", type: ["恶系"], count: 0, img: "roco-image/wolf.png" },
-  { name: "机械方方", type: ["机械系"], count: 0, img: "roco-image/cube.png" },
+/* 顶部栏 */
+.top-bar {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  padding: 0 10px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
 
-  { name: "绒绒", type: ["绒绒"], count: 0, img: "roco-image/rong.png" },
-  { name: "犀角鸟", type: ["犀角鸟"], count: 0, img: "roco-image/mop.png" },
-  { name: "火红尾", type: ["火系"], count: 0, img: "roco-image/horse.png" },
+/* 提示文字 */
+.left-text {
+  font-size: 11px;
+  color: #999;
+}
 
-  { name: "果冻", type: ["水系"], count: 0, img: "roco-image/jelly.png" },
-  { name: "星尘虫", type: ["虫系"], count: 0, img: "roco-image/ladybug.png" },
-  { name: "影狸", type: ["幽系"], count: 0, img: "roco-image/fox.png" },
+.center-group {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+}
 
-];
 
-/* ===== 初始化 ===== */
-window.addEventListener("DOMContentLoaded", () => {
-  loadData();
-  render();
+/* 按钮样式统一 */
+.reset-btn, .undo-btn {
+  font-size: 12px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 6px;
+  background: #00bfff;
+  color: white;
+}
 
-  container.style.display = "grid";
-  container.style.gridTemplateColumns = "repeat(6, 1fr)";
+.reset-btn {
+  touch-action: none;
+  user-select: none;
+}
+.undo-btn {
+  font-weight: bold;
+}
 
-  resetBtn = document.querySelector(".reset-btn");
-  undoBtn = document.querySelector(".undo-btn");
+/* 按钮 */
+button {
+  font-size: 12px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 6px;
+  background: #00bfff;
+  color: white;
 
-  if (!resetBtn) {
-    console.log("❌ reset-btn 没找到");
-    return;
+  min-width: 60px;
+}
+
+button:active {
+  transform: scale(0.95);
+}
+
+/* ===== 核心：响应式网格 ===== */
+#container {
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+
+  /* 默认手机竖屏 */
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (orientation: landscape) {
+  #container {
+    grid-template-columns: repeat(6, 1fr);
   }
-
-  let startX = 0;
-  let startY = 0;
-  let moved = false;
-
-  // ⭐ 关键：只用这一套手势
-resetBtn.addEventListener("pointerdown", (e) => {
-  e.preventDefault();   // ⭐ 阻止默认行为
-  startX = e.clientX;
-  startY = e.clientY;
-});
-
-resetBtn.addEventListener("pointerup", (e) => {
-  const dx = e.clientX - startX;
-  const dy = Math.abs(e.clientY - startY);
-
-  console.log("dx:", dx, "dy:", dy); // ⭐调试用
-
-  // 👉 右滑打开菜单
-  if (dx > 25 && dx > dy) {
-    e.preventDefault();
-    e.stopPropagation();
-    showResetMenu(e.pageX, e.pageY);
-    return;
-  }
-
-  // 👉 点击才重置
-  resetAll();
-});
-
-  undoBtn.addEventListener("click", undo);
-});
-
-/* ===== 菜单 ===== */
-function showResetMenu(x, y) {
-  const menu = document.getElementById("resetMenu");
-  const typeBox = document.getElementById("typeList");
-  const nameBox = document.getElementById("nameList");
-
-  menu.style.display = "block";
-  menu.style.left = x + "px";
-  menu.style.top = y + "px";
-
-  // ===== 属性 =====
-  let typeMap = {};
-  items.forEach(item => {
-    (Array.isArray(item.type) ? item.type : [item.type]).forEach(t => {
-      typeMap[t] = true;
-    });
-  });
-
-  typeBox.innerHTML = "<b>属性</b>";
-  Object.keys(typeMap).forEach(t => {
-    let div = document.createElement("div");
-    div.className = "menu-item";
-    div.innerText = t;
-    div.onclick = () => {
-      resetByType(t);
-      hideMenu();
-    };
-    typeBox.appendChild(div);
-  });
-
-  // ===== 宠物 =====
-  nameBox.innerHTML = "<b>宠物</b>";
-  items.forEach(item => {
-    let div = document.createElement("div");
-    div.className = "menu-item";
-    div.innerText = item.name;
-    div.onclick = () => {
-      item.count = 0;
-      save();
-      render();
-      hideMenu();
-    };
-    nameBox.appendChild(div);
-  });
 }
 
-function hideMenu() {
-  const menu = document.getElementById("resetMenu");
-  if (menu) menu.style.display = "none";
+.grid-wrapper {
+  min-width: 100%;
 }
 
-document.addEventListener("click", hideMenu);
+/* 卡片 */
+.item {
+  background: #fff;
+  border-radius: 8px;
+  aspect-ratio: 1/1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 
-/* ===== 功能 ===== */
-function resetByType(type) {
-  items.forEach(item => {
-    let types = Array.isArray(item.type) ? item.type : [item.type];
-    if (types.includes(type)) item.count = 0;
-  });
-  save();
-  render();
+  font-size: 10px;
 }
 
-function resetAll() {
-  items.forEach(i => i.count = 0);
-  save();
-  render();
+
+.item img {
+  width: 80%;
+  height: auto;
 }
 
-function undo() {
-  if (!historyStack.length) return;
-  items = JSON.parse(historyStack.pop());
-  save();
-  render();
+/* 名字 */
+.item div {
+  font-size: 11px;
 }
 
-/* ===== 存档 ===== */
-function save() {
-  localStorage.setItem("items", JSON.stringify(items));
+.item.empty {
+  background: transparent;
+  box-shadow: none;
 }
 
-function loadData() {
-  let data = localStorage.getItem("items");
-  if (data) items = JSON.parse(data);
+#grid16, #grid6 {
+  display: grid;
+  gap: 4px;
 }
 
-/* ===== 渲染 ===== */
-function render() {
-  const container = document.getElementById("container");
-  container.innerHTML = "";
-
-  const COLS = 6;
-  const ROWS = 4;
-
-  // 1️⃣ 先生成24格布局（纯结构）
-  let grid = Array(24).fill(null);
-
-  for (let col = 0; col < COLS; col++) {
-    for (let row = 0; row < ROWS; row++) {
-
-      const i = col * ROWS + row;
-
-      const isEmpty =
-        (col === 4 && row === 3) ||
-        (col === 5 && row === 3); // ⭐只留2个空格
-
-      grid[i] = isEmpty ? { empty: true } : null;
-    }
-  }
-
-  // 2️⃣ 再顺序填 items（只填非空格）
-  let itemIndex = 0;
-
-  for (let i = 0; i < grid.length; i++) {
-    if (grid[i] === null) {
-      grid[i] = items[itemIndex++] || { empty: true };
-    }
-  }
-
-  // 3️⃣ 渲染
-  grid.forEach((item, i) => {
-    container.appendChild(createItem(item, i));
-  });
-
-  console.log("items:", items.length);
-  console.log("used:", itemIndex);
+/* 上面 4×4 */
+#grid16 {
+  grid-template-columns: repeat(4, 1fr);
 }
 
-function createItem(item, index) {
-  const div = document.createElement("div");
-
-  if (item.empty) {
-    div.className = "item empty";
-    return div;
-  }
-
-  div.className = "item";
-
-  div.innerHTML = `
-    <img src="${item.img}">
-    <div>${item.name}</div>
-    <div class="count ${item.count > 0 ? "active" : ""}">
-      ${item.count}
-    </div>
-  `;
-
-  bindGesture(div, index);
-  return div;
+/* 下面 3×2 */
+#grid6 {
+  grid-template-columns: repeat(3, 1fr);
 }
 
-function getSlot(index) {
-  const row = Math.floor(index / 6);
-  const col = index % 6;
-
-  return { row, col };
+/* 数字 */
+.count {
+  font-size: 12px;
+  font-weight: bold;
+  color: #aaa;
 }
 
-/* ===== 点击/滑动 ===== */
-function bindGesture(el, index) {
-  let startX = 0;
-  let startY = 0;
-  let timer = null;
-  let isLong = false;
-
-  const SWIPE = 40;
-
-  el.addEventListener("pointerdown", (e) => {
-    startX = e.clientX;
-    startY = e.clientY;
-    isLong = false;
-
-    timer = setTimeout(() => {
-      isLong = true;
-      let v = prompt("输入数量");
-      if (v !== null) {
-        items[index].count = parseInt(v) || 0;
-        save();
-        render();
-      }
-    }, 600);
-  });
-
-  el.addEventListener("pointerup", (e) => {
-    clearTimeout(timer);
-    if (isLong) return;
-
-    let dx = e.clientX - startX;
-    let dy = e.clientY - startY;
-
-    if (Math.abs(dx) > Math.abs(dy) && dx > SWIPE) {
-      items[index].count--;
-      save();
-      render();
-      return;
-    }
-
-    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
-      items[index].count++;
-      save();
-      render();
-    }
-  });
+.count.active {
+  color: #00bfff;
 }
 
-/* ===== 统计 ===== */
-function updateStats() {
-  let stats = {};
+/* 统计栏 */
+#stats {
+  margin: 10px;
+  padding: 10px;
+  background: white;
+  border-radius: 10px;
+  font-size: 12px;
+  text-align: center;
 
-  items.forEach(item => {
-    (Array.isArray(item.type) ? item.type : [item.type]).forEach(t => {
-      if (t === "虫系") return;
-      stats[t] = (stats[t] || 0) + item.count;
-    });
-  });
-
-  const box = document.getElementById("stats");
-  box.innerHTML = "";
-
-  Object.entries(stats).forEach(([k, v]) => {
-    const div = document.createElement("div");
-    div.className = "stat-item";
-
-    div.textContent = `${k}: ${v}`;
-
-    // ⭐只要不是0就变黑
-    if (v > 0) {
-      div.classList.add("active");
-    }
-
-    box.appendChild(div);
-  });
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
 }
+
+.stat-item {
+  color: #aaa;
+  transition: 0.2s;
+}
+
+.stat-item.active {
+  color: #000;
+  font-weight: normal;
+}
+
+/* 菜单 */
+.menu {
+  position: absolute;
+  display: none;
+  z-index: 9999;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  padding: 8px;
+  width: 240px;
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.menu-grid {
+  display: flex;
+}
+
+.menu-left,
+.menu-right {
+  width: 50%;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.menu-left {
+  border-right: 1px solid #eee;
+}
+
+.menu-item {
+  padding: 6px;
+  font-size: 12px;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.menu-item:hover {
+  background: #f2f2f2;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- 顶部 -->
+<div class="top-bar">
+
+  <div class="center-group">
+    <button class="reset-btn">重置</button>
+    <button class="undo-btn">⮪</button>
+  </div>
+
+  <div class="left-text">
+    点击+1 | 右滑-1 |长按输入
+  </div>
+
+</div>
+
+<!-- 网格 -->
+<div class="grid-wrapper">
+  <div id="container"></div>
+</div>
+
+<!-- 统计 -->
+<div id="stats" class="stats"></div>
+
+<div id="resetMenu" class="menu">
+  <div class="menu-grid">
+    <div id="typeList" class="menu-left"></div>
+    <div id="nameList" class="menu-right"></div>
+  </div>
+</div>
+
+<script src="mobile-script.js" defer></script>
+
+</body>
+</html>
