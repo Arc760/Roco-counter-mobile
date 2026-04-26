@@ -92,13 +92,20 @@ function showResetMenu(x, y) {
   const nameBox = document.getElementById("nameList");
 
   menu.style.display = "block";
-  const w = 240;
-  const h = 300;
 
-  const maxX = window.innerWidth - w;
-  const maxY = window.innerHeight - h;
+  const menuW = 240;
+  const menuH = 300;
 
-  menu.style.left = Math.min(x, maxX) + "px";
+  const padding = 10;
+
+  const maxX = window.innerWidth - menuW - padding;
+  const maxY = window.innerHeight - menuH - padding;
+
+  // ⭐限制在屏幕内
+  const left = Math.min(Math.max(padding, x), maxX);
+  const top = Math.min(Math.max(padding, y), maxY);
+
+  menu.style.left = (window.innerWidth - menuW) / 2 + "px";
   menu.style.top = Math.min(y, maxY) + "px";
 
   // ===== 属性 =====
