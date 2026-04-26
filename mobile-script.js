@@ -59,6 +59,8 @@ resetBtn.addEventListener("pointerdown", (e) => {
   e.preventDefault();   // ⭐ 阻止默认行为
   startX = e.clientX;
   startY = e.clientY;
+
+  moved = false;
 });
 
 resetBtn.addEventListener("pointerup", (e) => {
@@ -105,8 +107,10 @@ function showResetMenu(x, y) {
   const left = Math.min(Math.max(padding, x), maxX);
   const top = Math.min(Math.max(padding, y), maxY);
 
-  menu.style.left = (window.innerWidth - menuW) / 2 + "px";
-  menu.style.top = Math.min(y, maxY) + "px";
+  menu.style.position = "fixed";
+  menu.style.left = "50%";
+  menu.style.top = "50%";
+  menu.style.transform = "translate(-50%, -50%)";
 
   // ===== 属性 =====
   let typeMap = {};
@@ -245,47 +249,15 @@ function bindGesture(el, index) {
   let moved = false;
   let timer = null;
 
-  const SWIPE = 40;
+  const SWIPE = 25;
 
-  function start(x, y) {
-    startX = x;
-    startY = y;
+  el.addEventListener("pointerdown", (e) => {
+    startX = e.clientX;
+    startY = e.clientY;
     moved = false;
-  }
 
-  function move(x, y) {
-    let dx = x - startX;
-    let dy = y - startY;
-
-    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
-      moved = true;
-      clearTimeout(timer);
-    }
-  }
-
-  function end(x, y) {
-    let dx = x - startX;
-    let dy = y - startY;
-
-    // 👉 右滑 -1
-    if (dx > SWIPE && Math.abs(dx) > Math.abs(dy)) {
-      items[index].count = Math.max(0, items[index].count - 1);
-      save();
-      render();
-      return;
-    }
-
-    // 👉 点击 +1
-    if (!moved && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
-      items[index].count++;
-      save();
-      render();
-    }
-  }
-
-  // ===== pointer（安卓）=====
-  el.addEventListener("pointerdown", e => {
-    start(e.clientX, e.clientY);
+    // ❗锁住手势
+    el.setPointerCapture(e.pointerId);
 
     timer = setTimeout(() => {
       if (!moved) {
@@ -296,27 +268,52 @@ function bindGesture(el, index) {
           render();
         }
       }
-    }, 500);
+    }, 600);
   });
 
-  el.addEventListener("pointermove", e => move(e.clientX, e.clientY));
-  el.addEventListener("pointerup", e => end(e.clientX, e.clientY));
+  el.addEventListener("pointermove", (e) => {
+    let dx = e.clientX - startX;
+    let dy = e.clientY - startY;
 
-  // ===== touch（iOS fallback）=====
-  el.addEventListener("touchstart", e => {
-    let t = e.touches[0];
-    start(t.clientX, t.clientY);
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      moved = true;
+      clearTimeout(timer);
+    }
   });
 
-  el.addEventListener("touchmove", e => {
-    let t = e.touches[0];
-    move(t.clientX, t.clientY);
+  el.addEventListener("pointerup", (e) => {
+    clearTimeout(timer);
+    el.releasePointerCapture(e.pointerId);
+
+    let dx = e.clientX - startX;
+    let dy = e.clientY - startY;
+
+    // ⭐⭐⭐ 核心：先判断滑动
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE) {
+
+      if (dx > 0) {
+        // 👉 右滑 -1
+        items[index].count = Math.max(0, items[index].count - 1);
+      } else {
+        // 👉 左滑 +1（可选）
+        items[index].count++;
+      }
+
+      save();
+      render();
+      return;
+    }
+
+    // 👉 点击 +1
+    if (!moved && Math.abs(dx) < 5 && Math.abs(dy) < 5) {
+      items[index].count++;
+      save();
+      render();
+    }
   });
 
-  el.addEventListener("touchend", e => {
-    let t = e.changedTouches[0];
-    if (!t) return;
-    end(t.clientX, t.clientY);
+  el.addEventListener("pointercancel", () => {
+    clearTimeout(timer);
   });
 }
 
