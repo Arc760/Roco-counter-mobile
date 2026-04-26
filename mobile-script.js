@@ -314,7 +314,12 @@ function bindGesture(el, index) {
 
   el.addEventListener("pointercancel", () => {
     clearTimeout(timer);
+    
   });
+  el.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+});
 }
 
 /* ===== 统计 ===== */
