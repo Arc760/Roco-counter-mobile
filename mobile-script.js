@@ -80,6 +80,9 @@ resetBtn.addEventListener("pointerup", (e) => {
 });
 
   undoBtn.addEventListener("click", undo);
+  if (undoBtn) {
+  undoBtn.onclick = undo;
+}
 });
 
 /* ===== 菜单 ===== */
@@ -89,8 +92,14 @@ function showResetMenu(x, y) {
   const nameBox = document.getElementById("nameList");
 
   menu.style.display = "block";
-  menu.style.left = x + "px";
-  menu.style.top = y + "px";
+  const w = 240;
+  const h = 300;
+
+  const maxX = window.innerWidth - w;
+  const maxY = window.innerHeight - h;
+
+  menu.style.left = Math.min(x, maxX) + "px";
+  menu.style.top = Math.min(y, maxY) + "px";
 
   // ===== 属性 =====
   let typeMap = {};
@@ -195,15 +204,16 @@ function render() {
 function createItem(item, index) {
   const div = document.createElement("div");
 
-  if (item.empty) {
-    div.className = "item empty";
-    return div;
-  }
+  const img = new Image(); // ⭐预加载
+  img.src = item.img;
+  img.loading = "eager";
 
   div.className = "item";
 
-  div.innerHTML = `
-    <img src="${item.img}">
+  div.appendChild(img);
+  img.style.width = "80%";
+
+  div.innerHTML += `
     <div>${item.name}</div>
     <div class="count ${item.count > 0 ? "active" : ""}">
       ${item.count}
@@ -228,44 +238,27 @@ function bindGesture(el, index) {
   let moved = false;
   let timer = null;
 
-  const SWIPE = 30; // 稍微放宽一点
+  const SWIPE = 40;
 
-  el.addEventListener("pointerdown", (e) => {
-    startX = e.clientX;
-    startY = e.clientY;
+  function start(x, y) {
+    startX = x;
+    startY = y;
     moved = false;
+  }
 
-    el.setPointerCapture(e.pointerId); // ⭐⭐⭐关键修复
-
-    timer = setTimeout(() => {
-      if (!moved) {
-        let v = prompt("输入数量");
-        if (v !== null) {
-          items[index].count = parseInt(v) || 0;
-          save();
-          render();
-        }
-      }
-    }, 500);
-  });
-
-  el.addEventListener("pointermove", (e) => {
-    let dx = e.clientX - startX;
-    let dy = e.clientY - startY;
+  function move(x, y) {
+    let dx = x - startX;
+    let dy = y - startY;
 
     if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
       moved = true;
       clearTimeout(timer);
     }
-  });
+  }
 
-  el.addEventListener("pointerup", (e) => {
-    clearTimeout(timer);
-
-    let dx = e.clientX - startX;
-    let dy = e.clientY - startY;
-
-    el.releasePointerCapture(e.pointerId); // ⭐⭐⭐释放
+  function end(x, y) {
+    let dx = x - startX;
+    let dy = y - startY;
 
     // 👉 右滑 -1
     if (dx > SWIPE && Math.abs(dx) > Math.abs(dy)) {
@@ -281,12 +274,45 @@ function bindGesture(el, index) {
       save();
       render();
     }
+  }
+
+  // ===== pointer（安卓）=====
+  el.addEventListener("pointerdown", e => {
+    start(e.clientX, e.clientY);
+
+    timer = setTimeout(() => {
+      if (!moved) {
+        let v = prompt("输入数量");
+        if (v !== null) {
+          items[index].count = parseInt(v) || 0;
+          save();
+          render();
+        }
+      }
+    }, 500);
   });
 
-  el.addEventListener("pointercancel", () => {
-    clearTimeout(timer);
+  el.addEventListener("pointermove", e => move(e.clientX, e.clientY));
+  el.addEventListener("pointerup", e => end(e.clientX, e.clientY));
+
+  // ===== touch（iOS fallback）=====
+  el.addEventListener("touchstart", e => {
+    let t = e.touches[0];
+    start(t.clientX, t.clientY);
+  });
+
+  el.addEventListener("touchmove", e => {
+    let t = e.touches[0];
+    move(t.clientX, t.clientY);
+  });
+
+  el.addEventListener("touchend", e => {
+    let t = e.changedTouches[0];
+    if (!t) return;
+    end(t.clientX, t.clientY);
   });
 }
+
 /* ===== 统计 ===== */
 function updateStats() {
   let stats = {};
